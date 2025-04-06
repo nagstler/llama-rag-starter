@@ -1,0 +1,28 @@
+# Data inputs
+data/
+
+# Vector index storage
+index/
+
+# Bytecode / cache
+__pycache__/
+*.py[cod]
+
+# Logs and junk
+*.log
+*.bak
+*.swp
+
+# Python envs
+.venv/
+env/
+venv/
+
+# IDE/OS files
+.vscode/
+.idea/
+.DS_Store
+
+# API secrets
+.env
+config.py  # only if it contains secrets

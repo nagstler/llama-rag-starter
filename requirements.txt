@@ -1,0 +1,6 @@
+llama-index
+faiss-cpu
+openai
+PyPDF2
+python-docx
+tqdm
