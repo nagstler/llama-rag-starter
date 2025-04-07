@@ -2,7 +2,7 @@
 
 > A minimal end-to-end Retrieval-Augmented Generation (RAG) pipeline using [LlamaIndex](https://www.llamaindex.ai/), [FAISS](https://github.com/facebookresearch/faiss), and [OpenAI](https://platform.openai.com/).
 
-This project demonstrates how to build a simple but extensible RAG system that can answer questions from unstructured documents using semantic search and large language models.
+This project demonstrates how to build a simple but extensible RAG pipeline that can answer questions from unstructured documents using semantic search and large language models.
 
 ---
 
