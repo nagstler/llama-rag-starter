@@ -10,9 +10,9 @@ from llama_index.core.storage import StorageContext
 
 def build_and_persist_index():
     print("📂 Loading documents from:", config.DATA_DIR)
-    documents = SimpleDirectoryReader(config.DATA_DIR).load_data()
+    documents = SimpleDirectoryReader(config.DATA_DIR, recursive=True).load_data()
 
-    print("🔧 Building FAISS vector store...")
+    print("🔧 Building vector store...")
     # ✅ create and keep a reference to the faiss_index
     faiss_index = faiss.IndexFlatL2(config.EMBEDDING_DIM)
     vector_store = FaissVectorStore(faiss_index=faiss_index)
@@ -29,7 +29,7 @@ def build_and_persist_index():
 
     # ✅ Save the original FAISS index reference that was actually used
     faiss_path = os.path.join(config.INDEX_DIR, "faiss.index")
-    print("📦 Saving FAISS index to:", faiss_path)
+    print("📦 Saving index to:", faiss_path)
     faiss.write_index(faiss_index, faiss_path)
 
     print("✅ Index built and saved.")
