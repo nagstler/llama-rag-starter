@@ -1,5 +1,7 @@
-llama-index
+llama-index==0.12.28
+llama-index-vector-stores-faiss
 faiss-cpu
+
 openai
 PyPDF2
 python-docx
