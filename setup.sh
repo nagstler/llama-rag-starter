@@ -73,7 +73,8 @@ mkdir -p data index
 echo "✅ Setup complete."
 echo "🧪 Validating installations..."
 
-python test_setup.py
+python -c "from llama_index.vector_stores.faiss import FaissVectorStore; print('✅ FaissVectorStore is working')"
+python -c "from llama_index.readers.file import PDFReader; print('✅ PDFReader is working')"
 
 # 👇 Friendly instructions to user
 echo ""
