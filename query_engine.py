@@ -13,6 +13,7 @@ def load_query_engine():
     # Load the saved FAISS index
     faiss_index_path = f"{config.INDEX_DIR}/faiss.index"
     faiss_index = faiss.read_index(faiss_index_path)
+    print(f"✅ FAISS index loaded with {faiss_index.ntotal} vectors")
 
     vector_store = FaissVectorStore(faiss_index=faiss_index)
     storage_context = StorageContext.from_defaults(
@@ -21,6 +22,10 @@ def load_query_engine():
     )
 
     index = load_index_from_storage(storage_context)
-    query_engine = index.as_query_engine(llm=OpenAI(model=config.LLM_MODEL))
+    query_engine = index.as_query_engine(
+        llm=OpenAI(model=config.LLM_MODEL),
+        similarity_top_k=5
+    )
+    print("✅ Query engine loaded successfully")
 
     return query_engine

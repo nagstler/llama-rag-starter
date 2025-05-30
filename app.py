@@ -20,7 +20,12 @@ def main():
             query = input("You: ")
             if query.strip().lower() in {"exit", "quit"}:
                 break
+            print(f"🔍 Querying: '{query}'")
             response = engine.query(query)
+            print(f"📊 Response type: {type(response)}")
+            print(f"📊 Response content: {response}")
+            if hasattr(response, 'response'):
+                print(f"📊 Response text: {response.response}")
             print("\n📝 Answer:\n", response, "\n")
 
     else:

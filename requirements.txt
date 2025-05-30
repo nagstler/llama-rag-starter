@@ -1,8 +1,12 @@
 llama-index==0.12.28
 llama-index-vector-stores-faiss
+llama-index-readers-file
 faiss-cpu
 
 openai
+pypdf
 PyPDF2
+pdfplumber
+pypdfium2
 python-docx
 tqdm

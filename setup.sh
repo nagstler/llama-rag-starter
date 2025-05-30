@@ -32,6 +32,9 @@ pip install \
   openai \
   tqdm \
   PyPDF2 \
+  pypdf \
+  pdfplumber \
+  pypdfium2 \
   python-docx \
   llama-index==0.12.28
 
@@ -59,14 +62,18 @@ else
   pip install faiss-cpu
 fi
 
-# Install vector store module
-pip install llama-index-vector-stores-faiss
+# Install vector store module and file readers
+pip install llama-index-vector-stores-faiss llama-index-readers-file
+
+# Step 7: Create required directories
+echo "📁 Creating data and index directories..."
+mkdir -p data index
 
 # Final check
 echo "✅ Setup complete."
-echo "🧪 Validating FAISS install..."
+echo "🧪 Validating installations..."
 
-python -c "from llama_index.vector_stores.faiss import FaissVectorStore; print('✅ FaissVectorStore is working')"
+python test_setup.py
 
 # 👇 Friendly instructions to user
 echo ""
