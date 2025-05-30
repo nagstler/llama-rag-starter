@@ -64,11 +64,13 @@ export OPENAI_API_KEY=sk-...
 
 ## 📦 Usage
 
-### 1. Drop Files into `data/`
+### Option 1: CLI Mode
+
+#### 1. Drop Files into `data/`
 
 Supports `.txt`, `.pdf`, `.docx`, and more.
 
-### 2. Run the CLI
+#### 2. Run the CLI
 
 ```bash
 python3 app.py
@@ -83,6 +85,57 @@ You’ll see:
 
 - Choose `1` to build the index from documents  
 - Choose `2` to ask natural language questions
+
+### Option 2: API Mode (NEW!)
+
+#### 1. Start the API server
+
+```bash
+python3 api.py
+```
+
+The API will run on `http://localhost:8000`
+
+#### 2. Use the API
+
+**Using the provided client:**
+```bash
+# Check status
+python3 api_client.py status
+
+# Build index from data folder
+python3 api_client.py build
+
+# Upload files and build index
+python3 api_client.py upload document.pdf
+
+# Query
+python3 api_client.py query "What is the speed limit?"
+
+# Interactive mode
+python3 api_client.py interactive
+```
+
+**Using curl:**
+```bash
+# Query the index
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"query":"What is this document about?"}' \
+  http://localhost:8000/query
+```
+
+**Using Python:**
+```python
+import requests
+
+response = requests.post(
+    "http://localhost:8000/query",
+    json={"query": "What are the requirements?"}
+)
+print(response.json())
+```
+
+See [API_DOCS.md](API_DOCS.md) for full API documentation.
 
 ---
 

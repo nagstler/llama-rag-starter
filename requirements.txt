@@ -10,3 +10,7 @@ pdfplumber
 pypdfium2
 python-docx
 tqdm
+
+# API dependencies
+flask
+werkzeug

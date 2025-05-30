@@ -36,6 +36,8 @@ pip install \
   pdfplumber \
   pypdfium2 \
   python-docx \
+  flask \
+  werkzeug \
   llama-index==0.12.28
 
 # Step 6: Platform-specific handling
