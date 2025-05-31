@@ -30,34 +30,34 @@ Build intelligent applications that can answer questions from your documents usi
 
 ```
 llama-rag-starter/
-├── src/                      # Main source code
-│   ├── api/                  # API layer
-│   │   ├── app.py           # Flask application factory
-│   │   └── routes.py        # API endpoints
-│   ├── core/                # Core RAG functionality
-│   │   ├── indexer.py       # Document indexing logic
-│   │   ├── query.py         # Query engine
-│   │   └── document_processor.py  # File handling
-│   ├── static/              # Frontend assets (CSS, JS)
-│   └── templates/           # HTML templates
-│       └── index.html       # Upload UI
-├── config/                  # Configuration
-│   └── settings.py          # Application settings
-├── scripts/                 # Utility scripts
-│   ├── setup.sh            # One-click setup
-│   ├── cleanup.sh          # Clean indexes
-│   └── client.py           # Example API client
-├── tests/                   # Test suite
-├── docs/                    # Documentation
-│   └── API_DOCS.md         # API reference
-├── data/                    # Document storage
-├── index/                   # FAISS index storage
-├── main.py                  # Application entry point
-├── Makefile                 # Common commands
-├── requirements.txt         # Python dependencies
-├── .env.example            # Environment template
-├── Dockerfile              # Container configuration
-└── docker-compose.yml      # Docker orchestration
+├── src/                                   # Main source code
+│   ├── api/                               # API layer
+│   │   ├── app.py                         # Flask application factory
+│   │   └── routes.py                      # API endpoints
+│   ├── core/                              # Core RAG functionality
+│   │   ├── indexer.py                     # Document indexing logic
+│   │   ├── query.py                       # Query engine
+│   │   └── document_processor.py          # File handling
+│   ├── static/                            # Frontend assets (CSS, JS)
+│   └── templates/                         # HTML templates
+│       └── index.html                     # Upload UI
+├── config/                                # Configuration
+│   └── settings.py                        # Application settings
+├── scripts/                               # Utility scripts
+│   ├── setup.sh                           # One-click setup
+│   ├── cleanup.sh                         # Clean indexes
+│   └── client.py                          # Example API client
+├── tests/                                 # Test suite
+├── docs/                                  # Documentation
+│   └── API_DOCS.md                        # API reference
+├── data/                                  # Document storage
+├── index/                                 # FAISS index storage
+├── main.py                                # Application entry point
+├── Makefile                               # Common commands
+├── requirements.txt                       # Python dependencies
+├── .env.example                           # Environment template
+├── Dockerfile                             # Container configuration
+└── docker-compose.yml                     # Docker orchestration
 ```
 
 ---
