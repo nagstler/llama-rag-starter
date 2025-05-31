@@ -21,7 +21,8 @@ Build intelligent applications that can answer questions from your documents usi
 
 ## 📸 Screenshot
 
-![Upload UI Screenshot](screenshot-placeholder.png)
+![image](https://github.com/user-attachments/assets/97c39475-3153-4de9-a5d6-77363e87bede)
+
 *Web interface for uploading and managing documents*
 
 ---
