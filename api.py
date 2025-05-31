@@ -1,6 +1,6 @@
 # api.py
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 import os
 import logging
 from werkzeug.utils import secure_filename
@@ -13,6 +13,14 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+# Enable CORS for all routes
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
 # Configuration
 ALLOWED_EXTENSIONS = {'pdf', 'txt', 'docx'}
@@ -35,6 +43,15 @@ def get_query_engine():
             logger.error(f"Failed to load query engine: {e}")
             return None
     return query_engine
+
+@app.route('/', methods=['GET'])
+def serve_ui():
+    """Serve the upload UI"""
+    ui_path = os.path.join(os.path.dirname(__file__), 'upload_ui.html')
+    if os.path.exists(ui_path):
+        return send_file(ui_path)
+    else:
+        return "Upload UI not found. Please ensure upload_ui.html exists.", 404
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -224,5 +241,10 @@ if __name__ == '__main__':
     # Run the app
     port = int(os.environ.get('PORT', 8000))
     print(f"🚀 Starting RAG API on http://localhost:{port}")
-    print(f"📚 See API_DOCS.md for documentation")
+    print(f"🌐 Upload UI available at http://localhost:{port}/")
+    print(f"📚 API endpoints:")
+    print(f"   - POST /query - Query the index")
+    print(f"   - POST /index/upload - Upload files")
+    print(f"   - GET /index/status - Check status")
+    print(f"📖 See API_DOCS.md for full documentation")
     app.run(host='0.0.0.0', port=port, debug=False)
