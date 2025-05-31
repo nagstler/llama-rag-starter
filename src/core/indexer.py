@@ -1,8 +1,7 @@
-# index_builder.py
+# src/core/indexer.py
 
 import os
 import faiss
-import config
 import logging
 from pathlib import Path
 from typing import List
@@ -10,6 +9,7 @@ from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Document
 from llama_index.vector_stores.faiss import FaissVectorStore
 from llama_index.core.storage import StorageContext
 from llama_index.readers.file import PDFReader
+from config import settings
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -69,7 +69,7 @@ def load_documents_with_fallback(data_dir: str) -> List[Document]:
 def build_and_persist_index():
     try:
         # Load documents with fallback methods
-        documents = load_documents_with_fallback(config.DATA_DIR)
+        documents = load_documents_with_fallback(settings.DATA_DIR)
         
         if len(documents) == 0:
             print("❌ No documents found in data directory!")
@@ -93,12 +93,12 @@ def build_and_persist_index():
 
     print("\n🔧 Building vector store...")
     # ✅ create and keep a reference to the faiss_index
-    faiss_index = faiss.IndexFlatL2(config.EMBEDDING_DIM)
+    faiss_index = faiss.IndexFlatL2(settings.EMBEDDING_DIM)
     vector_store = FaissVectorStore(faiss_index=faiss_index)
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
 
     print("📚 Creating index...")
-    print(f"🔑 Using OpenAI API key: {config.OPENAI_API_KEY[:10]}...")
+    print(f"🔑 Using OpenAI API key: {settings.OPENAI_API_KEY[:10]}...")
     
     try:
         index = VectorStoreIndex.from_documents(
@@ -112,11 +112,11 @@ def build_and_persist_index():
         print("💡 Make sure your OpenAI API key is valid and has credits")
         return
 
-    print("\n💾 Saving index to:", config.INDEX_DIR)
-    index.storage_context.persist(config.INDEX_DIR)
+    print("\n💾 Saving index to:", settings.INDEX_DIR)
+    index.storage_context.persist(settings.INDEX_DIR)
 
     # ✅ Save the original FAISS index reference that was actually used
-    faiss_path = os.path.join(config.INDEX_DIR, "faiss.index")
+    faiss_path = os.path.join(settings.INDEX_DIR, "faiss.index")
     print("📦 Saving FAISS index to:", faiss_path)
     faiss.write_index(faiss_index, faiss_path)
 

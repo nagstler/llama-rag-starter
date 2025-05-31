@@ -260,7 +260,7 @@
                 console.error('API check failed:', error);
             }
             document.getElementById('statusDot').classList.add('offline');
-            document.getElementById('statusText').textContent = 'API is offline - start with: python3 api.py';
+            document.getElementById('statusText').textContent = 'API is offline - start with: python3 main.py';
             return false;
         }
 
@@ -389,7 +389,7 @@
         async function uploadFiles() {
             const isOnline = await checkAPIStatus();
             if (!isOnline) {
-                showStatus('API is not running. Please start it with: python3 api.py', 'error');
+                showStatus('API is not running. Please start it with: python3 main.py', 'error');
                 return;
             }
 

@@ -22,7 +22,7 @@ def check_health():
             print("❌ API returned error:", response.status_code)
             return False
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
-        print("❌ API is not running. Start it with: python api.py")
+        print("❌ API is not running. Start it with: python main.py")
         return False
     except Exception as e:
         print(f"❌ Error checking health: {e}")
