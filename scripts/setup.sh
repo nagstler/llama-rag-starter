@@ -38,7 +38,9 @@ pip install \
   python-docx \
   flask \
   werkzeug \
-  llama-index==0.12.28
+  llama-index==0.12.28 \
+  langchain>=0.1.0 \
+  langchain-openai>=0.0.5
 
 # Step 6: Platform-specific handling
 echo "🧠 Installing FAISS and vector store support..."
@@ -77,6 +79,8 @@ echo "🧪 Validating installations..."
 
 python -c "from llama_index.vector_stores.faiss import FaissVectorStore; print('✅ FaissVectorStore is working')"
 python -c "from llama_index.readers.file import PDFReader; print('✅ PDFReader is working')"
+python -c "from langchain_openai import ChatOpenAI; print('✅ LangChain OpenAI is working')"
+python -c "from agents.sales_ops import SalesOpsAgent; print('✅ Sales Agent is working')" 2>/dev/null || echo "⚠️  Agent modules will be available after running main.py"
 
 # 👇 Friendly instructions to user
 echo ""
@@ -84,8 +88,8 @@ echo "🚀 You're all set!"
 echo ""
 echo "👉 Next steps:"
 echo "1. Configure your environment:"
-echo "   cp .env.example .env"
-echo "   # Edit .env and add your OpenAI API key"
+echo "   export OPENAI_API_KEY='your-openai-api-key'"
+echo "   # Or create .env file with OPENAI_API_KEY=your-key"
 echo ""
 echo "2. Run the application:"
 echo "   python main.py"
@@ -96,6 +100,8 @@ echo "   http://localhost:8000"
 echo ""
 echo "📤 Upload documents through the web interface"
 echo "🔍 Query via API: curl -X POST http://localhost:8000/query -H \"Content-Type: application/json\" -d '{\"query\":\"Your question\"}'"
+echo "🤖 Chat with Agent: curl -X POST http://localhost:8000/agent/chat -H \"Content-Type: application/json\" -d '{\"message\":\"What sales data do you have?\"}'"
 echo ""
-echo "📚 For more options: make help"
+echo "📚 Test the agent: python test_agent.py"
+echo "📖 See docs/AGENT_USAGE.md for agent documentation"
 echo "📖 See README.md for complete documentation"

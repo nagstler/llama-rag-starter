@@ -7,6 +7,7 @@ from werkzeug.utils import secure_filename
 from src.core.indexer import build_and_persist_index
 from src.core.query import load_query_engine
 from config import settings
+from agents.sales_ops import SalesOpsAgent
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -17,6 +18,9 @@ MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
 
 # Global query engine (loaded once)
 query_engine = None
+
+# Global sales agent (loaded once)
+sales_agent = None
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -32,6 +36,25 @@ def get_query_engine():
             logger.error(f"Failed to load query engine: {e}")
             return None
     return query_engine
+
+def get_sales_agent():
+    """Get or initialize the sales agent"""
+    global sales_agent
+    if sales_agent is None:
+        try:
+            # Get the RAG API URL from environment or use default
+            rag_api_url = os.environ.get('RAG_API_URL', 'http://localhost:8000')
+            sales_agent = SalesOpsAgent(
+                rag_api_url=rag_api_url,
+                model_name="gpt-3.5-turbo",  # Use gpt-3.5 for cost efficiency
+                temperature=0,
+                verbose=True
+            )
+            logger.info("Sales agent initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize sales agent: {e}")
+            return None
+    return sales_agent
 
 def register_routes(app):
     """Register all routes with the Flask app"""
@@ -178,6 +201,43 @@ def register_routes(app):
             
         except Exception as e:
             logger.error(f"Error processing query: {e}")
+            return jsonify({
+                "success": False,
+                "error": str(e)
+            }), 500
+
+    @app.route('/agent/chat', methods=['POST'])
+    def agent_chat():
+        """Chat with the sales operations agent"""
+        try:
+            data = request.get_json()
+            
+            if not data or 'message' not in data:
+                return jsonify({
+                    "success": False,
+                    "error": "No message provided"
+                }), 400
+            
+            message = data['message']
+            
+            # Get sales agent
+            agent = get_sales_agent()
+            if agent is None:
+                return jsonify({
+                    "success": False,
+                    "error": "Sales agent not initialized. Please check OpenAI API key."
+                }), 503
+            
+            # Process message with agent
+            response = agent.process(message)
+            
+            return jsonify({
+                "response": response,
+                "agent": "sales_ops"
+            })
+            
+        except Exception as e:
+            logger.error(f"Error in agent chat: {e}")
             return jsonify({
                 "success": False,
                 "error": str(e)

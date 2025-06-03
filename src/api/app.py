@@ -29,6 +29,13 @@ def create_app():
 
 def run_server():
     """Run the Flask server"""
+    # Check for OpenAI API key
+    if not settings.OPENAI_API_KEY:
+        logger.warning("⚠️  OPENAI_API_KEY not set. Agent features will not work.")
+        logger.warning("   Set it with: export OPENAI_API_KEY='your-key'")
+    else:
+        logger.info("✅ OpenAI API key detected")
+    
     # Create data directory if it doesn't exist
     os.makedirs(settings.DATA_DIR, exist_ok=True)
     os.makedirs(settings.INDEX_DIR, exist_ok=True)
@@ -46,6 +53,7 @@ def run_server():
     print(f"🌐 Upload UI available at http://localhost:{port}/")
     print(f"📚 API endpoints:")
     print(f"   - POST /query - Query the index")
+    print(f"   - POST /agent/chat - Chat with sales agent")
     print(f"   - POST /index/upload - Upload files")
     print(f"   - GET /index/status - Check status")
     print(f"📖 See API_DOCS.md for full documentation")

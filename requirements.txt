@@ -14,3 +14,7 @@ tqdm
 # API dependencies
 flask
 werkzeug
+
+# Agent dependencies
+langchain>=0.1.0
+langchain-openai>=0.0.5
