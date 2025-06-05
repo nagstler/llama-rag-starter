@@ -1,6 +1,6 @@
 # src/api/routes.py
 
-from flask import request, jsonify, send_file
+from flask import request, jsonify, send_file, Response, stream_with_context
 import os
 import logging
 from werkzeug.utils import secure_filename
@@ -8,6 +8,8 @@ from src.core.indexer import build_and_persist_index
 from src.core.query import load_query_engine
 from config import settings
 from agents.sales_ops import SalesOpsAgent
+import json
+import time
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -239,6 +241,78 @@ def register_routes(app):
             
         except Exception as e:
             logger.error(f"Error in agent chat: {e}")
+            return jsonify({
+                "success": False,
+                "error": str(e)
+            }), 500
+    
+    @app.route('/agent/chat/stream', methods=['POST'])
+    def agent_chat_stream():
+        """Stream chat responses from the sales operations agent"""
+        try:
+            data = request.get_json()
+            
+            if not data or 'message' not in data:
+                return jsonify({
+                    "success": False,
+                    "error": "No message provided"
+                }), 400
+            
+            message = data['message']
+            
+            def generate():
+                # Get sales agent
+                agent = get_sales_agent()
+                if agent is None:
+                    yield f"data: {json.dumps({'type': 'error', 'content': 'Agent not initialized'})}\n\n"
+                    return
+                
+                # Process message with agent
+                try:
+                    result = agent.process(message)
+                    steps = result.get("steps", [])
+                    response = result.get("response", "")
+                    
+                    # Stream reasoning steps
+                    for step in steps:
+                        yield f"data: {json.dumps({'type': 'reasoning', 'step': step})}\n\n"
+                        time.sleep(0.5)  # Delay for visual effect
+                    
+                    # True streaming: send characters progressively
+                    yield f"data: {json.dumps({'type': 'content_start'})}\n\n"
+                    time.sleep(0.3)
+                    
+                    # Stream each character individually for real streaming
+                    for i, char in enumerate(response):
+                        event_id = f"char_{time.time()}_{i}"
+                        yield f"data: {json.dumps({'type': 'content_char', 'char': char, 'id': event_id})}\n\n"
+                        # Faster typing speed for better UX
+                        if char == ' ':
+                            time.sleep(0.01)  # Very fast for spaces
+                        elif char in '.,!?':
+                            time.sleep(0.05)   # Brief pause for punctuation
+                        else:
+                            time.sleep(0.02)  # Fast character speed
+                    
+                    yield f"data: {json.dumps({'type': 'content_end'})}\n\n"
+                    
+                    # Send completion signal
+                    yield f"data: {json.dumps({'type': 'done'})}\n\n"
+                    
+                except Exception as e:
+                    yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
+            
+            return Response(
+                stream_with_context(generate()),
+                mimetype='text/event-stream',
+                headers={
+                    'Cache-Control': 'no-cache',
+                    'X-Accel-Buffering': 'no'
+                }
+            )
+            
+        except Exception as e:
+            logger.error(f"Error in agent chat stream: {e}")
             return jsonify({
                 "success": False,
                 "error": str(e)

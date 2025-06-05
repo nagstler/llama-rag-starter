@@ -20,6 +20,7 @@ def create_app():
         response.headers.add('Access-Control-Allow-Origin', '*')
         response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
         response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        response.headers.add('Access-Control-Expose-Headers', 'Content-Type')
         return response
     
     # Register routes
@@ -54,6 +55,7 @@ def run_server():
     print(f"📚 API endpoints:")
     print(f"   - POST /query - Query the index")
     print(f"   - POST /agent/chat - Chat with sales agent")
+    print(f"   - POST /agent/chat/stream - Streaming chat (SSE)")
     print(f"   - POST /index/upload - Upload files")
     print(f"   - GET /index/status - Check status")
     print(f"📖 See API_DOCS.md for full documentation")
