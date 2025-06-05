@@ -40,7 +40,9 @@ pip install \
   werkzeug \
   llama-index==0.12.28 \
   langchain>=0.1.0 \
-  langchain-openai>=0.0.5
+  langchain-openai>=0.0.5 \
+  streamlit>=1.31.0 \
+  requests
 
 # Step 6: Platform-specific handling
 echo "🧠 Installing FAISS and vector store support..."
@@ -73,14 +75,70 @@ pip install llama-index-vector-stores-faiss llama-index-readers-file
 echo "📁 Creating data and index directories..."
 mkdir -p data index
 
+# Step 8: Create .env file if it doesn't exist
+if [ ! -f ".env" ] && [ -f ".env.example" ]; then
+    echo "📝 Creating .env file from template..."
+    cp .env.example .env
+    echo "⚠️  Please edit .env and add your OpenAI API key"
+fi
+
 # Final check
-echo "✅ Setup complete."
+echo ""
 echo "🧪 Validating installations..."
 
-python -c "from llama_index.vector_stores.faiss import FaissVectorStore; print('✅ FaissVectorStore is working')"
-python -c "from llama_index.readers.file import PDFReader; print('✅ PDFReader is working')"
-python -c "from langchain_openai import ChatOpenAI; print('✅ LangChain OpenAI is working')"
-python -c "from agents.sales_ops import SalesOpsAgent; print('✅ Sales Agent is working')" 2>/dev/null || echo "⚠️  Agent modules will be available after running main.py"
+# Check each critical component
+FAILED=0
+
+# Check LlamaIndex components
+if python -c "from llama_index.vector_stores.faiss import FaissVectorStore" 2>/dev/null; then
+    echo "✅ FaissVectorStore is working"
+else
+    echo "❌ FaissVectorStore failed to import"
+    FAILED=1
+fi
+
+if python -c "from llama_index.readers.file import PDFReader" 2>/dev/null; then
+    echo "✅ PDFReader is working"
+else
+    echo "❌ PDFReader failed to import"
+    FAILED=1
+fi
+
+# Check LangChain
+if python -c "from langchain_openai import ChatOpenAI" 2>/dev/null; then
+    echo "✅ LangChain OpenAI is working"
+else
+    echo "❌ LangChain OpenAI failed to import"
+    FAILED=1
+fi
+
+# Check Streamlit
+if python -c "import streamlit" 2>/dev/null; then
+    echo "✅ Streamlit is working"
+else
+    echo "❌ Streamlit failed to import"
+    FAILED=1
+fi
+
+# Check Flask
+if python -c "import flask" 2>/dev/null; then
+    echo "✅ Flask is working"
+else
+    echo "❌ Flask failed to import"
+    FAILED=1
+fi
+
+# Agent modules check (optional - will be created when running)
+python -c "from agents.sales_ops import SalesOpsAgent" 2>/dev/null && echo "✅ Sales Agent modules found" || echo "ℹ️  Agent modules will be available after first run"
+
+if [ $FAILED -eq 0 ]; then
+    echo ""
+    echo "✅ All critical components installed successfully!"
+else
+    echo ""
+    echo "⚠️  Some components failed. Try running the script again or install missing components manually."
+    exit 1
+fi
 
 # 👇 Friendly instructions to user
 echo ""
@@ -103,5 +161,11 @@ echo "🔍 Query via API: curl -X POST http://localhost:8000/query -H \"Content-
 echo "🤖 Chat with Agent: curl -X POST http://localhost:8000/agent/chat -H \"Content-Type: application/json\" -d '{\"message\":\"What sales data do you have?\"}'"
 echo ""
 echo "📚 Test the agent: python test_agent.py"
+echo "💬 Run chat UI: streamlit run streamlit_chat.py"
 echo "📖 See docs/AGENT_USAGE.md for agent documentation"
 echo "📖 See README.md for complete documentation"
+echo ""
+echo "🏃 Quick Start:"
+echo "   Terminal 1: python main.py          # Start API server"
+echo "   Terminal 2: streamlit run streamlit_chat.py  # Start chat UI"
+echo "   Browser: http://localhost:8501      # Open chat interface"

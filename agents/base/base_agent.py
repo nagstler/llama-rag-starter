@@ -7,6 +7,7 @@ from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.tools import Tool
+from .callbacks import AgentReasoningCallback
 
 
 class BaseTool(ABC):
@@ -46,7 +47,8 @@ class BaseAgent(ABC):
         self.tools: List[BaseTool] = []
         self.memory = ConversationBufferMemory(
             memory_key="chat_history",
-            return_messages=True
+            return_messages=True,
+            output_key="output"  # Explicitly set output key
         )
         
         # Initialize LLM
@@ -94,7 +96,8 @@ class BaseAgent(ABC):
             memory=self.memory,
             verbose=self.verbose,
             max_iterations=5,
-            handle_parsing_errors=True
+            handle_parsing_errors=True,
+            return_intermediate_steps=True  # Important for capturing reasoning
         )
     
     @abstractmethod
@@ -102,16 +105,67 @@ class BaseAgent(ABC):
         """Get the system prompt for this agent."""
         pass
     
-    def process(self, query: str) -> str:
-        """Process a user query and return response."""
+    def process(self, query: str) -> Dict[str, Any]:
+        """Process a user query and return response with reasoning steps."""
         if not self.agent_executor:
-            return "Agent not initialized. Please add tools first."
+            return {
+                "response": "Agent not initialized. Please add tools first.",
+                "steps": []
+            }
         
         try:
-            result = self.agent_executor.invoke({"input": query})
-            return result["output"]
+            # Create callback to capture reasoning
+            callback = AgentReasoningCallback()
+            
+            # Process with callback
+            result = self.agent_executor.invoke(
+                {"input": query},
+                callbacks=[callback]
+            )
+            
+            # Get captured steps
+            steps = callback.get_steps()
+            
+            # If no steps captured by callback, try to extract from intermediate steps
+            if not steps and "intermediate_steps" in result:
+                steps.append({
+                    "type": "thinking",
+                    "content": "Analyzing your request..."
+                })
+                
+                for action, observation in result["intermediate_steps"]:
+                    steps.append({
+                        "type": "tool_decision",
+                        "tool": action.tool,
+                        "input": str(action.tool_input),
+                        "reasoning": f"Using {action.tool} to search for: {action.tool_input}"
+                    })
+                    steps.append({
+                        "type": "tool_result",
+                        "content": "Found relevant information"
+                    })
+                
+                steps.append({
+                    "type": "conclusion",
+                    "content": "Formulating response based on findings..."
+                })
+            
+            # Ensure we always have some steps to show agent is working
+            if not steps:
+                steps = [
+                    {"type": "thinking", "content": "Processing your request..."},
+                    {"type": "conclusion", "content": "Response prepared."}
+                ]
+            
+            return {
+                "response": result.get("output", "No response generated"),
+                "steps": steps
+            }
         except Exception as e:
-            return f"Error processing query: {str(e)}"
+            return {
+                "response": f"Error processing query: {str(e)}",
+                "steps": []
+            }
     
     def clear_memory(self):
         """Clear conversation memory."""

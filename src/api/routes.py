@@ -229,10 +229,11 @@ def register_routes(app):
                 }), 503
             
             # Process message with agent
-            response = agent.process(message)
+            result = agent.process(message)
             
             return jsonify({
-                "response": response,
+                "response": result["response"],
+                "steps": result.get("steps", []),
                 "agent": "sales_ops"
             })
             
