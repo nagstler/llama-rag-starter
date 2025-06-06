@@ -6,6 +6,8 @@ import logging
 from werkzeug.utils import secure_filename
 from src.core.indexer import build_and_persist_index
 from src.core.query import load_query_engine
+from src.core.index_manager import IndexManager
+from src.core.document_processor import DocumentProcessor
 from config import settings
 from agents.sales_ops import SalesOpsAgent
 import json
@@ -24,6 +26,10 @@ query_engine = None
 # Global sales agent (loaded once)
 sales_agent = None
 
+# Global index manager
+index_manager = IndexManager()
+document_processor = DocumentProcessor()
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -33,7 +39,10 @@ def get_query_engine():
     if query_engine is None:
         try:
             query_engine = load_query_engine()
-            logger.info("Query engine loaded successfully")
+            if query_engine is not None:
+                logger.info("Query engine loaded successfully")
+            else:
+                logger.warning("Query engine failed to load")
         except Exception as e:
             logger.error(f"Failed to load query engine: {e}")
             return None
@@ -98,10 +107,14 @@ def register_routes(app):
             # Build the index
             build_and_persist_index()
             
-            # Reload query engine
+            # Force reload query engine
             global query_engine
             query_engine = None
-            get_query_engine()
+            try:
+                query_engine = load_query_engine()
+                logger.info(f"Query engine reloaded: {query_engine is not None}")
+            except Exception as e:
+                logger.error(f"Failed to reload query engine: {e}")
             
             return jsonify({
                 "success": True,
@@ -118,7 +131,7 @@ def register_routes(app):
 
     @app.route('/index/upload', methods=['POST'])
     def upload_and_index():
-        """Upload files and rebuild index"""
+        """Upload files and add to index incrementally"""
         try:
             if 'files' not in request.files:
                 return jsonify({
@@ -128,6 +141,7 @@ def register_routes(app):
             
             files = request.files.getlist('files')
             uploaded_files = []
+            indexed_files = []
             
             for file in files:
                 if file and allowed_file(file.filename):
@@ -143,6 +157,14 @@ def register_routes(app):
                     filepath = os.path.join(settings.DATA_DIR, filename)
                     file.save(filepath)
                     uploaded_files.append(filename)
+                    
+                    # Process and add to index incrementally
+                    from pathlib import Path
+                    documents = document_processor.process_file(Path(filepath))
+                    if documents:
+                        result = index_manager.add_document(filepath, documents)
+                        if result["success"]:
+                            indexed_files.append(filename)
             
             if not uploaded_files:
                 return jsonify({
@@ -150,18 +172,16 @@ def register_routes(app):
                     "error": "No valid files uploaded"
                 }), 400
             
-            # Build the index with new files
-            build_and_persist_index()
-            
-            # Reload query engine
+            # Reload query engine to use updated index
             global query_engine
             query_engine = None
             get_query_engine()
             
             return jsonify({
                 "success": True,
-                "message": "Files uploaded and index rebuilt",
-                "uploaded_files": uploaded_files
+                "message": "Files uploaded and indexed",
+                "uploaded_files": uploaded_files,
+                "indexed_files": indexed_files
             })
             
         except Exception as e:
@@ -190,8 +210,9 @@ def register_routes(app):
             if engine is None:
                 return jsonify({
                     "success": False,
-                    "error": "Query engine not initialized. Please build index first."
-                }), 503
+                    "error": "Query engine not initialized. Please upload and index documents first.",
+                    "response": "No documents are currently indexed. Please upload documents in the Knowledge Docs section to enable search functionality."
+                }), 200  # Return 200 so the agent gets a proper response
             
             # Execute query
             response = engine.query(query_text)
@@ -344,6 +365,174 @@ def register_routes(app):
             
         except Exception as e:
             logger.error(f"Error checking status: {e}")
+            return jsonify({
+                "success": False,
+                "error": str(e)
+            }), 500
+
+    @app.route('/documents', methods=['GET'])
+    def list_documents():
+        """List all documents in the data directory"""
+        try:
+            documents = []
+            index_info = index_manager.get_document_info()
+            
+            for root, dirs, files in os.walk(settings.DATA_DIR):
+                for file in files:
+                    if allowed_file(file):
+                        file_path = os.path.join(root, file)
+                        rel_path = os.path.relpath(file_path, settings.DATA_DIR)
+                        
+                        # Get file stats
+                        stats = os.stat(file_path)
+                        
+                        # Check if indexed
+                        is_indexed = file_path in index_info["documents"]
+                        num_chunks = 0
+                        if is_indexed:
+                            num_chunks = index_info["documents"][file_path]["num_chunks"]
+                        
+                        documents.append({
+                            "id": rel_path,
+                            "name": file,
+                            "path": rel_path,
+                            "size": stats.st_size,
+                            "modified": stats.st_mtime,
+                            "type": file.rsplit('.', 1)[1].lower() if '.' in file else 'unknown',
+                            "indexed": is_indexed,
+                            "chunks": num_chunks
+                        })
+            
+            # Sort by modified time (newest first)
+            documents.sort(key=lambda x: x['modified'], reverse=True)
+            
+            return jsonify({
+                "success": True,
+                "documents": documents,
+                "total": len(documents),
+                "indexed_count": sum(1 for d in documents if d["indexed"]),
+                "total_vectors": index_info["total_vectors"]
+            })
+            
+        except Exception as e:
+            logger.error(f"Error listing documents: {e}")
+            return jsonify({
+                "success": False,
+                "error": str(e)
+            }), 500
+
+    @app.route('/documents/<path:doc_id>', methods=['DELETE'])
+    def delete_document(doc_id):
+        """Delete a document and remove from index"""
+        try:
+            # Construct full path
+            file_path = os.path.join(settings.DATA_DIR, doc_id)
+            
+            # Security check - ensure path is within data directory
+            if not os.path.abspath(file_path).startswith(os.path.abspath(settings.DATA_DIR)):
+                return jsonify({
+                    "success": False,
+                    "error": "Invalid document path"
+                }), 400
+            
+            # Check if file exists
+            if not os.path.exists(file_path):
+                return jsonify({
+                    "success": False,
+                    "error": "Document not found"
+                }), 404
+            
+            # Remove from index first
+            index_result = index_manager.remove_document(file_path)
+            
+            # Delete the file
+            os.remove(file_path)
+            
+            # Reload query engine to use updated index
+            global query_engine
+            query_engine = None
+            get_query_engine()
+            
+            return jsonify({
+                "success": True,
+                "message": "Document deleted and removed from index",
+                "vectors_removed": index_result.get("vectors_removed", 0)
+            })
+            
+        except Exception as e:
+            logger.error(f"Error deleting document: {e}")
+            return jsonify({
+                "success": False,
+                "error": str(e)
+            }), 500
+
+    @app.route('/documents/reindex', methods=['POST'])
+    def reindex_documents():
+        """Reindex all documents"""
+        try:
+            from pathlib import Path
+            
+            # Collect all documents and process them
+            documents_by_path = {}
+            
+            for root, dirs, files in os.walk(settings.DATA_DIR):
+                for file in files:
+                    if allowed_file(file):
+                        file_path = os.path.join(root, file)
+                        documents = document_processor.process_file(Path(file_path))
+                        if documents:
+                            documents_by_path[file_path] = documents
+            
+            if not documents_by_path:
+                return jsonify({
+                    "success": False,
+                    "error": "No documents found to index"
+                }), 400
+            
+            # Rebuild the entire index
+            result = index_manager.rebuild_full_index(documents_by_path)
+            
+            if not result["success"]:
+                return jsonify({
+                    "success": False,
+                    "error": result.get("error", "Unknown error")
+                }), 500
+            
+            # Reload query engine
+            global query_engine
+            query_engine = None
+            get_query_engine()
+            
+            return jsonify({
+                "success": True,
+                "message": "Documents reindexed successfully",
+                "documents_indexed": result["documents_indexed"],
+                "total_vectors": result["total_vectors"]
+            })
+            
+        except Exception as e:
+            logger.error(f"Error reindexing documents: {e}")
+            return jsonify({
+                "success": False,
+                "error": str(e)
+            }), 500
+
+    @app.route('/reload-query-engine', methods=['POST'])
+    def reload_query_engine():
+        """Force reload the query engine"""
+        try:
+            global query_engine
+            query_engine = None
+            query_engine = load_query_engine()
+            
+            return jsonify({
+                "success": True,
+                "message": "Query engine reloaded",
+                "loaded": query_engine is not None
+            })
+            
+        except Exception as e:
+            logger.error(f"Error reloading query engine: {e}")
             return jsonify({
                 "success": False,
                 "error": str(e)

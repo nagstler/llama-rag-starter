@@ -11,6 +11,7 @@ export default function TopNavBar({ activeSection, onSectionChange }: TopNavBarP
   const sections = [
     { id: 'chatbot', label: 'Chat Assistant', icon: '💬' },
     { id: 'agents', label: 'AI Agents', icon: '🤖' },
+    { id: 'knowledge', label: 'Knowledge Docs', icon: '📚' },
   ];
 
   return (

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import TopNavBar from '../components/TopNavBar';
 import ChatView from '../components/ChatView';
 import AgentsView from '../components/AgentsView';
+import KnowledgeView from '../components/KnowledgeView';
 
 export default function Home() {
   const [activeSection, setActiveSection] = useState('chatbot');
@@ -18,6 +19,7 @@ export default function Home() {
       <div className="flex-1 overflow-hidden">
         {activeSection === 'chatbot' && <ChatView />}
         {activeSection === 'agents' && <AgentsView />}
+        {activeSection === 'knowledge' && <KnowledgeView />}
       </div>
     </div>
   );
