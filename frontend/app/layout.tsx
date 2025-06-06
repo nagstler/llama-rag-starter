@@ -5,8 +5,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Sales Operations Agent',
-  description: 'AI-powered sales assistant with LangChain and LlamaIndex',
+  title: 'AgentFlo - AI Assistant Platform',
+  description: 'Versatile AI agents for various tasks and workflows',
 }
 
 export default function RootLayout({
